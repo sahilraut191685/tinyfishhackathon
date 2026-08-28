@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopAI – Smart Product Finder</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .glow {
+      box-shadow: 0 0 25px rgba(59, 130, 246, 0.35);
+    }
+  </style>
+
+</head>
+
+<body class="bg-[#0f172a] text-white min-h-screen flex flex-col">
+
+  <!-- NAVBAR -->
+  <header class="flex items-center justify-between px-10 py-6 border-b border-slate-700">
+    <h1 class="text-2xl font-bold text-blue-400">ShopAI</h1>
+    <span class="text-sm text-slate-400">AI Product Search</span>
+  </header>
+
+  <!-- HERO -->
+  <section class="flex flex-col items-center justify-center text-center mt-16 px-4">
+
+    <h2 class="text-4xl md:text-5xl font-bold mb-6">
+      Find Products with <span class="text-blue-400">AI</span>
+    </h2>
+
+    <p class="text-slate-400 mb-10 max-w-xl">
+      Search any product and our AI agent extracts the best results from multiple e-commerce websites.
+    </p>
+
+    <!-- SEARCH BAR -->
+    <div class="flex w-full max-w-2xl bg-slate-800 rounded-xl overflow-hidden glow">
+
+      <input id="product" type="text"
+        placeholder="Search product (e.g. iPhone 15, gaming laptop)"
+        class="flex-1 p-4 bg-slate-800 text-white outline-none" />
+
+      <button onclick="searchProduct()" class="bg-blue-500 hover:bg-blue-600 px-6 font-semibold">
+        Search
+      </button>
+
+    </div>
+
+  </section>
+
+  <!-- LOADING -->
+  <div id="loading" class="text-center mt-10 hidden">
+    <p class="text-slate-400 animate-pulse">🤖 AI is searching the internet...</p>
+  </div>
+
+  <!-- RESULTS -->
+  <section id="results"
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-10 mt-6">
+  </section>
+
+  <script>
+
+    async function searchProduct() {
+
+      let product = document.getElementById("product").value
+
+      if (!product) return
+
+      document.getElementById("results").innerHTML = ""
+      document.getElementById("loading").style.display = "block"
+
+      const response = await fetch(
+        `http://127.0.0.1:8000/dynamic_amazon?product_name=${product}`,
+        { method: "POST" }
+      )
+
+      const data = await response.json()
+
+      document.getElementById("loading").style.display = "none"
+
+      renderProducts(data)
+
+    }
+
+
+    function renderProducts(data) {
+
+      const container = document.getElementById("results")
+
+      container.innerHTML = ""
+
+      const amazon = data.data_amazon || []
+      const flipkart = data.data_flipcart || []
+
+      const allProducts = [
+        ...amazon.map(p => ({ ...p, source: "Amazon" })),
+        ...flipkart.map(p => ({ ...p, source: "Flipkart" }))
+      ]
+
+      if (allProducts.length === 0) {
+        container.innerHTML = "<p class='text-slate-400'>No results found</p>"
+        return
+      }
+
+      allProducts.forEach(product => {
+
+        const card = `
+        <div class="bg-slate-800 rounded-xl p-6 hover:scale-105 transition glow">
+
+          <span class="text-xs text-slate-400">${product.source}</span>
+
+          <h3 class="text-lg font-semibold mt-2 mb-3">
+            ${product.name}
+          </h3>
+
+          <p class="text-blue-400 text-xl font-bold">
+            ${product.price}
+          </p>
+
+        </div>
+        `
+
+        container.innerHTML += card
+
+      })
+
+    }
+
+  </script>
+
+</body>
+
+</html>

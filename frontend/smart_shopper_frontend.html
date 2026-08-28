@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SmartCart – Compare & Conquer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --border: #2a2a3a;
+    --accent: #ff5c3a;
+    --accent2: #ffb23a;
+    --amazon: #ff9900;
+    --flipkart: #2874f0;
+    --text: #f0f0f8;
+    --muted: #8888aa;
+    --success: #3affa0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* HEADER */
+  header {
+    padding: 40px 0 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    font-size: 0.85rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* SEARCH BAR */
+  .search-section {
+    margin: 48px 0 40px;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .search-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .search-input-wrap svg {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 400;
+    padding: 18px 18px 18px 50px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255,92,58,0.15);
+  }
+
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  .btn-search {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 0 32px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .btn-search:hover { background: #ff3d1a; }
+  .btn-search:active { transform: scale(0.97); }
+  .btn-search:disabled { background: var(--border); cursor: not-allowed; }
+
+  /* QUICK PILLS */
+  .quick-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .pill:hover { border-color: var(--accent); color: var(--text); }
+
+  /* STATUS */
+  .status-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 32px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .status-bar.visible { display: flex; }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* RESULTS GRID */
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 700px) { .results-grid { grid-template-columns: 1fr; } }
+
+  .platform-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .platform-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .platform-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .amazon-dot { background: var(--amazon); }
+  .flipkart-dot { background: var(--flipkart); }
+
+  .platform-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+  }
+
+  .platform-count {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: var(--surface2);
+    border-radius: 999px;
+    padding: 3px 10px;
+  }
+
+  .product-list { padding: 12px; }
+
+  .product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 10px;
+    border-radius: 10px;
+    transition: background 0.15s;
+    animation: fadeUp 0.3s ease both;
+  }
+
+  .product-item:hover { background: var(--surface2); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .product-name {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .product-price {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--accent2);
+    white-space: nowrap;
+  }
+
+  .empty-state {
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  /* AI RECOMMENDATION */
+  .ai-card {
+    background: linear-gradient(135deg, var(--surface) 0%, #1a1a2e 100%);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ai-card::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(255,92,58,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .ai-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .ai-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,92,58,0.15);
+    border: 1px solid rgba(255,92,58,0.3);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .ai-body {
+    font-size: 0.92rem;
+    line-height: 1.75;
+    color: #c8c8e0;
+    white-space: pre-wrap;
+  }
+
+  /* ASK AI */
+  .ask-section {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 48px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ask-row { display: flex; gap: 10px; }
+
+  .ask-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .ask-input:focus { border-color: var(--accent); }
+  .ask-input::placeholder { color: var(--muted); }
+
+  .btn-ask {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-ask:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-ask:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .ask-response {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: 10px;
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: #c8c8e0;
+    display: none;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .ask-response.visible { display: block; }
+
+  /* ERROR */
+  .error-msg {
+    padding: 14px 18px;
+    background: rgba(255,60,60,0.1);
+    border: 1px solid rgba(255,60,60,0.3);
+    border-radius: 10px;
+    color: #ff8080;
+    font-size: 0.88rem;
+    display: none;
+    margin-bottom: 24px;
+  }
+
+  .error-msg.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <div class="logo">Smart<span>Cart</span></div>
+    </div>
+    <div class="tagline">Compare Amazon & Flipkart · AI-Powered Deals</div>
+  </header>
+
+  <!-- SEARCH -->
+  <section class="search-section">
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Search for a product, e.g. OnePlus 12..." />
+      </div>
+      <button class="btn-search" id="searchBtn" onclick="searchProduct()">Compare →</button>
+    </div>
+    <div class="quick-pills">
+      <span class="pill" onclick="quickSearch('iPhone 15')">iPhone 15</span>
+      <span class="pill" onclick="quickSearch('boAt earbuds')">boAt Earbuds</span>
+      <span class="pill" onclick="quickSearch('Samsung TV 43 inch')">Samsung TV 43"</span>
+      <span class="pill" onclick="quickSearch('Laptop under 50000')">Laptops</span>
+      <span class="pill" onclick="quickSearch('Nike running shoes')">Nike Shoes</span>
+    </div>
+  </section>
+
+  <!-- STATUS -->
+  <div class="status-bar" id="statusBar">
+    <div class="spinner"></div>
+    <span id="statusText">Fetching results from Amazon & Flipkart…</span>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- RESULTS -->
+  <div class="results-grid" id="resultsGrid" style="display:none">
+    <div class="platform-card">
+      <div class="platform-header">
+        <div class="platform-dot amazon-dot"></div>
+        <span class="platform-name">Amazon India</span>
+        <span class="platform-count" id="amazonCount">0 results</span>
+      </div>
+      <div class="product-list" id="amazonList"></div>
+    </div>
+    <div class="platform-card">
+      <div class="platform-header">
+        <div class="platform-dot flipkart-dot"></div>
+        <span class="platform-name">Flipkart</span>
+        <span class="platform-count" id="flipkartCount">0 results</span>
+      </div>
+      <div class="product-list" id="flipkartList"></div>
+    </div>
+  </div>
+
+  <!-- AI RECOMMENDATION -->
+  <div class="ai-card" id="aiCard" style="display:none">
+    <div class="ai-header">
+      <div class="ai-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L9.09 9H2l5.47 3.97L5.18 20 12 15.9 18.82 20l-2.29-7.03L22 9h-7.09L12 2z"/></svg>
+        AI Recommendation
+      </div>
+    </div>
+    <div class="ai-body" id="aiBody"></div>
+  </div>
+
+  <!-- ASK AI -->
+  <div class="ask-section">
+    <div class="section-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Ask the AI Assistant
+    </div>
+    <div class="ask-row">
+      <input type="text" class="ask-input" id="askInput" placeholder="Ask anything about shopping, products, comparisons…" />
+      <button class="btn-ask" id="askBtn" onclick="askAI()">Ask</button>
+    </div>
+    <div class="ask-response" id="askResponse"></div>
+  </div>
+
+</div>
+
+<script>
+  const BASE_URL = 'http://localhost:8000';
+
+  function quickSearch(term) {
+    document.getElementById('searchInput').value = term;
+    searchProduct();
+  }
+
+  async function searchProduct() {
+    const query = document.getElementById('searchInput').value.trim();
+    if (!query) return;
+
+    const btn = document.getElementById('searchBtn');
+    const statusBar = document.getElementById('statusBar');
+    const statusText = document.getElementById('statusText');
+    const errorMsg = document.getElementById('errorMsg');
+    const resultsGrid = document.getElementById('resultsGrid');
+    const aiCard = document.getElementById('aiCard');
+
+    btn.disabled = true;
+    btn.textContent = 'Searching…';
+    statusBar.classList.add('visible');
+    statusText.textContent = `Scanning Amazon & Flipkart for "${query}"…`;
+    errorMsg.classList.remove('visible');
+    resultsGrid.style.display = 'none';
+    aiCard.style.display = 'none';
+
+    try {
+      const res = await fetch(`${BASE_URL}/dynamic_amazon?product_name=${encodeURIComponent(query)}`, {
+        method: 'POST'
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+
+      renderProducts('amazonList', 'amazonCount', data.data_amazon || []);
+      renderProducts('flipkartList', 'flipkartCount', data.data_flipcart || []);
+
+      resultsGrid.style.display = 'grid';
+
+      if (data.ai_recommendation) {
+        document.getElementById('aiBody').textContent = data.ai_recommendation;
+        aiCard.style.display = 'block';
+      }
+
+    } catch (err) {
+      errorMsg.textContent = `⚠ Could not connect to backend. Make sure your FastAPI server is running at ${BASE_URL}. (${err.message})`;
+      errorMsg.classList.add('visible');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Compare →';
+      statusBar.classList.remove('visible');
+    }
+  }
+
+  function renderProducts(listId, countId, products) {
+    const list = document.getElementById(listId);
+    const countEl = document.getElementById(countId);
+    countEl.textContent = `${products.length} result${products.length !== 1 ? 's' : ''}`;
+
+    if (!products.length) {
+      list.innerHTML = '<div class="empty-state">No results found</div>';
+      return;
+    }
+
+    list.innerHTML = products.map((p, i) => `
+      <div class="product-item" style="animation-delay:${i * 40}ms">
+        <span class="product-name">${escHtml(p.name || p.product_name || 'Unknown product')}</span>
+        <span class="product-price">${escHtml(p.price || '—')}</span>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function askAI() {
+    const input = document.getElementById('askInput');
+    const query = input.value.trim();
+    if (!query) return;
+
+    const btn = document.getElementById('askBtn');
+    const responseEl = document.getElementById('askResponse');
+
+    btn.disabled = true;
+    btn.textContent = '…';
+    responseEl.classList.remove('visible');
+
+    try {
+      const res = await fetch(`${BASE_URL}/ask?query=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      responseEl.textContent = data.response || data.error || 'No response';
+      responseEl.classList.add('visible');
+    } catch (err) {
+      responseEl.textContent = `Could not reach AI. Is your server running? (${err.message})`;
+      responseEl.classList.add('visible');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Ask';
+    }
+  }
+
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') searchProduct();
+  });
+
+  document.getElementById('askInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') askAI();
+  });
+</script>
+</body>
+</html>
